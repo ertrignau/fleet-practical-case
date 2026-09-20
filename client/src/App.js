@@ -309,6 +309,33 @@ function App() {
     }
   }
 
+  async function handleAddToCart(variantId) {
+    try {
+      const response = await fetch("/api/cart/items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          variantId,
+        }),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.message || "Could not add item to cart");
+      }
+
+      setStatusMessage("Item added to cart");
+    } catch (error) {
+      setErrors((prev) => [
+        ...prev,
+        `Add to cart failed: ${error.message}`,
+      ]);
+    }
+  }
+
   async function submitEmployee(event) {
     event.preventDefault();
 
@@ -835,6 +862,7 @@ function App() {
                     <th>SKU</th>
                     <th>Price</th>
                     <th>Stock</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 
@@ -852,6 +880,15 @@ function App() {
                           {product.stock > 0
                             ? product.stock
                             : "Out of stock"}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => handleAddToCart(product.variant_id)}
+                            disabled={product.stock <= 0}
+                          >
+                            Add to cart
+                          </button>
                         </td>
                       </tr>
                     );
