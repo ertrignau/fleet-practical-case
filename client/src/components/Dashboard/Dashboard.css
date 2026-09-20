@@ -1,0 +1,42 @@
+.app-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.app-kpis article {
+  min-height: 78px;
+
+  padding: 14px;
+
+  background: #f1f6fc;
+  border: 1px solid #d3e0ef;
+  border-radius: 8px;
+}
+
+.app-kpis h3 {
+  margin: 0 0 7px;
+
+  color: #586b80;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+.app-kpis strong {
+  display: block;
+
+  color: #152536;
+
+  font-size: 24px;
+  line-height: 1;
+}
+
+@media (max-width: 700px) {
+  .app-kpis {
+    grid-template-columns: 1fr;
+  }
+}
