@@ -40,6 +40,9 @@ function App() {
   const [errors, setErrors] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [loadingDevices, setLoadingDevices] = useState(false);
+  const [creatingOrder, setCreatingOrder] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [dashboardState, setDashboardState] = useState({
     totalEmployees: 0,
     totalDevices: 0,
@@ -250,6 +253,12 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [statusMessage]);
 
+  useEffect(() => {
+    if (activeTab === "orders") {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
   async function fetchEmployees() {
     setLoadingEmployees(true);
     setErrors([]);
@@ -412,6 +421,62 @@ async function handleRemoveCartItem(variantId) {
       ...prev,
       `Cart remove failed: ${error.message}`,
     ]);
+  }
+}
+
+async function handleCreateOrder() {
+  if (cart.length === 0) {
+    return;
+  }
+
+  setCreatingOrder(true);
+  try{
+    const response = await fetch("api/orders", {
+      method: "POST",
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+      throw new Error(json.message || "Could not create order");
+    }
+
+    setStatusMessage(`Order #${json.orderId} created`);
+
+    await Promise.all([
+      fetchCart(),
+      fetchProducts(),
+      fetchOrders(),
+    ]);
+  } catch (error) {
+    setErrors((prev) => [
+      ...prev,
+      `Order creation failed: ${error.message}`,
+    ]);
+  } finally {
+    setCreatingOrder(false);
+  }
+}
+
+async function fetchOrders() {
+  setLoadingOrders(true);
+
+  try {
+    const response = await fetch("/api/orders");
+    const json = await response.json();
+
+    if (!response.ok) {
+      throw new Error(json.message || "Could not load orders");
+    }
+
+    setOrders(Array.isArray(json) ? json : []);
+  } catch (error) {
+    setErrors((prev) => [
+      ...prev,
+      `Orders fetch failed: ${error.message}`,
+    ]);
+  } finally {
+    setLoadingOrders(false);
   }
 }
 
@@ -1047,6 +1112,13 @@ async function handleRemoveCartItem(variantId) {
                 <p>
                   <strong>Total: {cartTotal.toFixed(2)} €</strong>
                 </p>
+                <button
+                  type="button"
+                  onClick={handleCreateOrder}
+                  disabled={creatingOrder || cart.length === 0}
+                >
+                  {creatingOrder ? "Creating order ..." : "Create order"}
+                </button>
                 </>
               ) :null}
             </aside>
@@ -1055,9 +1127,59 @@ async function handleRemoveCartItem(variantId) {
         {activeTab === "orders" ? (
           <section className="panel">
             <h2>Orders</h2>
-            <p>Order history coming soon.</p>
-          </section>
-        ) : null}
+            
+            {loadingOrders ? <p>Loading orders...</p> : null}
+
+            {!loadingOrders && orders.length === 0 ? (
+              <p>No orders yet.</p>
+            ) :null}
+
+            {!loadingOrders && orders.length > 0 ? (
+              <div className="orders-list">
+                {orders.map((order) => (
+                  <article key={order.id} className="order-card">
+                    <div className="order-header">
+                      <h3>Order #{order.id}</h3>
+                      <p>{new Date(order.created_at).toLocaleString()}</p>
+                    </div>
+                    <p>
+                      <strong>Items:</strong> {order.item_count}
+                    </p>
+
+                    <p>
+                      <strong>Total:</strong>{" "}
+                      {order.total_amount.toFixed(2)} €
+                    </p>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Configuration</th>
+                          <th>SKU</th>
+                          <th>Unit price</th>
+                          <th>Quantity</th>
+                          <th>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {order.items.map((item) => (
+                          <tr key={item.id}>
+                            <td>{item.product_name}</td>
+                            <td>{item.configuration}</td>
+                            <td>{item.sku}</td>
+                            <td>{item.unit_price.toFixed(2)} €</td>
+                            <td>{item.quantity}</td>
+                            <td>{item.line_total.toFixed(2)} €</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+           </section>
+        ) :null}
       </main>
     </div>
   );
