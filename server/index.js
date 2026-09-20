@@ -38,10 +38,49 @@ db.serialize(() => {
       FOREIGN KEY (owner_id) REFERENCES employees(id) ON DELETE SET NULL
     )
   `);
+
+  db.run(`
+  CREATE TABLE IF NOT EXISTS cart_items (
+      product_variant_id INTEGER PRIMARY KEY,
+      quantity INTEGER NOT NULL CHECK(quantity > 0),
+      FOREIGN KEY (product_variant_id)
+        REFERENCES product_variants(id) ON DELETE CASCADE
+    )
+  `);
+  });
+
+  app.get("/api/health", (req, res) => {
+  res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-app.get("/api/health", (req, res) => {
-  res.json({ ok: true, timestamp: new Date().toISOString() });
+app.get("/api/products", (req, res) => {
+  const sql = `
+    SELECT
+      p.id AS product_id,
+      p.name,
+      p.status,
+      p.base_price,
+      pv.id AS variant_id,
+      pv.configuration,
+      pv.sku,
+      pv.price_delta,
+      pv.stock
+    FROM products p
+    LEFT JOIN product_variants pv ON pv.product_id = p.id
+    WHERE p.status = 'active'
+    ORDER BY p.id, pv.id
+  `;
+
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        return res.status(500).json({
+          message: "Failed to fetch products",
+          detail: err.message,
+        });
+      }
+
+      res.json(rows);
+    });
 });
 
 app.get("/api/employees", (req, res) => {
