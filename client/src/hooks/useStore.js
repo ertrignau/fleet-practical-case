@@ -61,7 +61,7 @@ function useStore({
         if (!response.ok) {
           throw new Error(
             json.message ||
-              "Could not load product",
+              "Could not load products",
           );
         }
 
@@ -80,9 +80,11 @@ function useStore({
       }
     }, [setErrors]);
 
-  const fetchCart =
-    useCallback(async () => {
-      setLoadingCart(true);
+  const fetchCart = useCallback(
+    async ({ showLoading = true } = {}) => {
+      if (showLoading) {
+        setLoadingCart(true);
+      }
 
       try {
         const response =
@@ -109,9 +111,13 @@ function useStore({
           `Cart fetch failed: ${error.message}`,
         ]);
       } finally {
-        setLoadingCart(false);
+        if (showLoading) {
+          setLoadingCart(false);
+        }
       }
-    }, [setErrors]);
+    },
+    [setErrors],
+  );
 
   const fetchOrders =
     useCallback(async () => {
@@ -194,11 +200,9 @@ function useStore({
         );
       }
 
-      setStatusMessage(
-        "Item added to cart",
-      );
-
-      await fetchCart();
+      await fetchCart({
+        showLoading: false,
+      });
     } catch (error) {
       setErrors((prev) => [
         ...prev,
@@ -240,7 +244,9 @@ function useStore({
         );
       }
 
-      await fetchCart();
+      await fetchCart({
+        showLoading: false,
+      });
     } catch (error) {
       setErrors((prev) => [
         ...prev,
@@ -270,11 +276,9 @@ function useStore({
         );
       }
 
-      setStatusMessage(
-        "Item removed from cart",
-      );
-
-      await fetchCart();
+      await fetchCart({
+        showLoading: false,
+      });
     } catch (error) {
       setErrors((prev) => [
         ...prev,
@@ -311,7 +315,9 @@ function useStore({
       );
 
       await Promise.all([
-        fetchCart(),
+        fetchCart({
+          showLoading: false,
+        }),
         fetchProducts(),
         fetchOrders(),
       ]);
