@@ -1,3 +1,5 @@
+import "./CartSidebar.css";
+
 function CartSidebar({
   cart,
   loadingCart,

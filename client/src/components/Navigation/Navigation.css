@@ -1,0 +1,29 @@
+.app-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  margin-bottom: 12px;
+}
+
+.tab-button {
+  background: #ffffff;
+  border: 1px solid #8fa0b2;
+  color: #17212b;
+}
+
+.tab-button:hover:not(:disabled) {
+  background: #edf3f8;
+}
+
+.tab-button.active {
+  background: #263746;
+  border-color: #263746;
+  color: #ffffff;
+}
+
+.tab-button.active:hover:not(:disabled) {
+  background: #1f2f3d;
+  border-color: #1f2f3d;
+}

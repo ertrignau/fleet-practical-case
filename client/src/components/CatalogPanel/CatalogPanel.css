@@ -1,0 +1,29 @@
+.catalog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 14px;
+  align-items: start;
+}
+
+.catalog-layout > div {
+  min-width: 0;
+}
+
+.catalog-layout table {
+  margin-top: 4px;
+}
+
+.catalog-layout td:last-child,
+.catalog-layout th:last-child {
+  text-align: center;
+}
+
+.catalog-layout td:last-child button {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .catalog-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,4 +1,5 @@
-import CartSidebar from "./CartSidebar";
+import CartSidebar from "../CartSidebar/CartSidebar";
+import "./CatalogPanel.css";
 
 function CatalogPanel({
   products,
