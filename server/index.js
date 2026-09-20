@@ -83,6 +83,226 @@ app.get("/api/products", (req, res) => {
     });
 });
 
+app.get("/api/cart", (req, res) => {
+  const sql = `
+    SELECT
+      ci.product_variant_id,
+      ci.quantity,
+      p.id AS product_id,
+      p.name,
+      pv.configuration,
+      pv.sku,
+      pv.stock,
+      p.base_price,
+      pv.price_delta,
+      (p.base_price + pv.price_delta) AS unit_price,
+      (p.base_price + pv.price_delta) * ci.quantity AS line_total
+    FROM cart_items ci
+    JOIN product_variants pv ON pv.id = ci.product_variant_id
+    JOIN products p ON p.id = pv.product_id
+    ORDER BY p.id, pv.id
+  `;
+
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to fetch cart",
+        detail: err.message,
+      });
+    }
+
+    res.json(rows);
+  });
+});
+
+app.post("/api/cart/items", (req, res) => {
+  const variantId = Number(req.body?.variantId);
+
+  if (!variantId) {
+    return res.status(400).json({
+      message: "Invalid product variant id",
+    });
+  }
+
+  db.get(
+    `
+    SELECT
+      pv.id,
+      pv.stock
+    FROM product_variants pv
+    JOIN products p ON p.id = pv.product_id
+    WHERE pv.id = ?
+      AND p.status = 'active'
+    `,
+    [variantId],
+    (variantErr, variant) => {
+      if (variantErr) {
+        return res.status(500).json({
+          message: "Failed to validate product variant",
+          detail: varriantErr.message,
+        });
+      }
+
+      if (!variant) {
+        return res.status(404).json({
+          message: "Product variant not found",
+        });
+      }
+
+      if (variant.stock <= 0) {
+        return res.status(400).json({
+          message: "Product variant is out of stock",
+        });
+      }
+
+      db.get(
+        "SELECT quantity FROM cart_items WHERE product_variant_id = ?",
+        [variantId],
+        (cartErr, cartItem) => {
+          if (cartErr) {
+            return res.status(500).json({
+              message: "Failed to check cart",
+              detail: cartErr.message,
+            });
+          }
+
+          const nextQuantity = (cartItem?.quantity || 0) + 1;
+
+          if (nextQuantity > variant.stock) {
+            return res.status(400).json({
+              message: "Requested quantity exceeds available stock",
+            });
+          }
+
+          db.run(
+            `
+              INSERT INTO cart_items (product_variant_id, quantity)
+              VALUES (?, 1)
+              ON CONFLICT(product_variant_id)
+              DO UPDATE SET quantity = quantity + 1
+            `,
+            [variantId],
+            function onUpsert(err) {
+              if (err) {
+                return res.status(500).json({
+                  message: "Failed to add item to cart",
+                  detail: err.message,
+                });
+              }
+
+              res.status(201).json({
+                success: true,
+              });
+            },
+          );
+        },
+      );
+    },
+  );
+});
+
+app.patch("/api/cart/items/:variantId", (req, res) => {
+  const variantId = Number(req.params.variantId);
+  const quantity = Number(req.body?.quantity);
+
+  if (!variantId) {
+    return res.status(400).json({
+      message: "Invalid product variant id",
+    });
+  }
+
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return res.status(400).json({
+      message: "Quantity must be a positive integer",
+    });
+  }
+
+  db.get(
+    "SELECT stock FROM product_variants WHERE id = ?",
+    [variantId],
+    (variantErr, variant) => {
+      if (variantErr) {
+        return res.status(500).json({
+          message: "Failed to validate product variant",
+          detail: variantErr.message,
+        });
+      }
+
+      if (!variant) {
+        return res.status(404).json({
+          message: "Product variant not found",
+        });
+      }
+
+      if (quantity > variant.stock) {
+        return res.status(400).json({
+          message: "Requested quantity exceeds available stock",
+        });
+      }
+
+      db.run(
+        `
+          UPDATE cart_items
+          SET quantity = ?
+          WHERE product_variant_id = ?
+        `,
+        [quantity, variantId],
+        function onUpdate(err) {
+          if (err) {
+            return res.status(500).json({
+              message: "Failed to update cart item",
+              detail: err.message,
+            });
+          }
+
+          if (this.changes === 0) {
+            return res.status(404).json({
+              message: "Cart item not found",
+            });
+          }
+
+          res.json({
+            success: true,
+          });
+        },
+      );
+    },
+  );
+});
+
+app.delete("/api/cart/items/:variantId", (req, res) => {
+  const variantId = Number(req.params.variantId);
+
+  if (!variantId) {
+    return res.status(400).json({
+      message: "Invalid product variant id",
+    });
+  }
+
+  db.run(
+    "DELETE FROM cart_items WHERE product_variant_id = ?",
+    [variantId],
+    function onDelete(err) {
+      if (err) {
+        return res.status(500).json({
+          message: "Failed to remove cart item",
+          detail: err.message,
+        });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({
+          message: "Cart item not found",
+        });
+      }
+
+      res.json({
+        success: true,
+      });
+    },
+  );
+});
+
 app.get("/api/employees", (req, res) => {
   const role = req.query.role || "";
   const search = req.query.search || "";
