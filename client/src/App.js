@@ -1,14 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const DEFAULT_EMPLOYEE_FORM = { name: "", role: "" };
-const DEFAULT_DEVICE_FORM = { name: "", type: "Laptop", ownerId: "" };
-const ALLOWED_TABS = ["employees", "devices", "catalog", "orders"];
+const DEFAULT_EMPLOYEE_FORM = {
+  name: "",
+  role: "",
+};
+
+const DEFAULT_DEVICE_FORM = {
+  name: "",
+  type: "Laptop",
+  ownerId: "",
+};
+
+const ALLOWED_TABS = [
+  "employees",
+  "devices",
+  "catalog",
+  "orders",
+];
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace("#", "");
-    const savedTab = window.localStorage.getItem("fleet_active_tab");
+    const savedTab = window.localStorage.getItem(
+      "fleet_active_tab",
+    );
 
     if (ALLOWED_TABS.includes(hash)) {
       return hash;
@@ -23,38 +39,81 @@ function App() {
 
   const [employees, setEmployees] = useState([]);
   const [devices, setDevices] = useState([]);
+
   const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingProducts, setLoadingProducts] =
+    useState(false);
+
   const [cart, setCart] = useState([]);
-  const [loadingCart, setLoadingCart] = useState(false);
-  const [filteredEmployees, setFilteredEmployees] = useState([]);
-  const [filteredDevices, setFilteredDevices] = useState([]);
-  const [roleFilter, setRoleFilter] = useState("");
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState("");
-  const [deviceOwnerFilter, setDeviceOwnerFilter] = useState("");
-  const [employeeSearch, setEmployeeSearch] = useState("");
-  const [deviceSearch, setDeviceSearch] = useState("");
-  const [employeeForm, setEmployeeForm] = useState(DEFAULT_EMPLOYEE_FORM);
-  const [deviceForm, setDeviceForm] = useState(DEFAULT_DEVICE_FORM);
-  const [editingEmployeeId, setEditingEmployeeId] = useState(null);
-  const [editingDeviceId, setEditingDeviceId] = useState(null);
-  const [statusMessage, setStatusMessage] = useState("");
-  const [errors, setErrors] = useState([]);
-  const [loadingEmployees, setLoadingEmployees] = useState(false);
-  const [loadingDevices, setLoadingDevices] = useState(false);
-  const [creatingOrder, setCreatingOrder] = useState(false);
+  const [loadingCart, setLoadingCart] =
+    useState(false);
+
   const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [loadingOrders, setLoadingOrders] =
+    useState(false);
+  const [creatingOrder, setCreatingOrder] =
+    useState(false);
 
-  const [dashboardState, setDashboardState] = useState({
-    totalEmployees: 0,
-    totalDevices: 0,
-    assignedDevices: 0,
-  });
+  const [filteredEmployees, setFilteredEmployees] =
+    useState([]);
+  const [filteredDevices, setFilteredDevices] =
+    useState([]);
 
-  const [ownerNameById, setOwnerNameById] = useState({});
-  const [loadingOwnerNames, setLoadingOwnerNames] = useState(false);
-  const [lastRefreshAt, setLastRefreshAt] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [deviceTypeFilter, setDeviceTypeFilter] =
+    useState("");
+  const [deviceOwnerFilter, setDeviceOwnerFilter] =
+    useState("");
+
+  const [employeeSearch, setEmployeeSearch] =
+    useState("");
+  const [deviceSearch, setDeviceSearch] =
+    useState("");
+
+  const [employeeForm, setEmployeeForm] = useState(
+    DEFAULT_EMPLOYEE_FORM,
+  );
+
+  const [deviceForm, setDeviceForm] = useState(
+    DEFAULT_DEVICE_FORM,
+  );
+
+  const [
+    editingEmployeeId,
+    setEditingEmployeeId,
+  ] = useState(null);
+
+  const [
+    editingDeviceId,
+    setEditingDeviceId,
+  ] = useState(null);
+
+  const [statusMessage, setStatusMessage] =
+    useState("");
+
+  const [errors, setErrors] = useState([]);
+
+  const [loadingEmployees, setLoadingEmployees] =
+    useState(false);
+
+  const [loadingDevices, setLoadingDevices] =
+    useState(false);
+
+  const [dashboardState, setDashboardState] =
+    useState({
+      totalEmployees: 0,
+      totalDevices: 0,
+      assignedDevices: 0,
+    });
+
+  const [ownerNameById, setOwnerNameById] =
+    useState({});
+
+  const [loadingOwnerNames, setLoadingOwnerNames] =
+    useState(false);
+
+  const [lastRefreshAt, setLastRefreshAt] =
+    useState("");
 
   const roleOptions = useMemo(() => {
     const set = new Set();
@@ -82,13 +141,19 @@ function App() {
 
   useEffect(() => {
     const savedRoleFilter =
-      window.localStorage.getItem("fleet_role_filter");
+      window.localStorage.getItem(
+        "fleet_role_filter",
+      );
 
     const savedTypeFilter =
-      window.localStorage.getItem("fleet_device_type_filter");
+      window.localStorage.getItem(
+        "fleet_device_type_filter",
+      );
 
     const savedOwnerFilter =
-      window.localStorage.getItem("fleet_device_owner_filter");
+      window.localStorage.getItem(
+        "fleet_device_owner_filter",
+      );
 
     if (savedRoleFilter !== null) {
       setRoleFilter(savedRoleFilter);
@@ -146,6 +211,12 @@ function App() {
   }, [activeTab]);
 
   useEffect(() => {
+    if (activeTab === "orders") {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     if (activeTab !== "devices") {
       return;
     }
@@ -153,10 +224,13 @@ function App() {
     const ownerIds = Array.from(
       new Set(
         filteredDevices
-          .map((device) => Number(device.owner_id))
+          .map((device) =>
+            Number(device.owner_id),
+          )
           .filter(
             (ownerId) =>
-              Number.isInteger(ownerId) && ownerId > 0,
+              Number.isInteger(ownerId) &&
+              ownerId > 0,
           ),
       ),
     );
@@ -179,7 +253,8 @@ function App() {
           if (response.status === 404) {
             return {
               ownerId: String(ownerId),
-              ownerName: `Unknown employee #${ownerId}`,
+              ownerName:
+                `Unknown employee #${ownerId}`,
             };
           }
 
@@ -198,7 +273,8 @@ function App() {
         } catch (error) {
           return {
             ownerId: String(ownerId),
-            ownerName: `Unknown employee #${ownerId}`,
+            ownerName:
+              `Unknown employee #${ownerId}`,
           };
         }
       }),
@@ -207,7 +283,8 @@ function App() {
         const ownerMap = {};
 
         resolvedOwners.forEach((owner) => {
-          ownerMap[owner.ownerId] = owner.ownerName;
+          ownerMap[owner.ownerId] =
+            owner.ownerName;
         });
 
         setOwnerNameById(ownerMap);
@@ -236,10 +313,14 @@ function App() {
         nextEmployees.filter(
           (employee) => {
             return (
-              String(employee.name || "")
+              String(
+                employee.name || "",
+              )
                 .toLowerCase()
                 .includes(normalized) ||
-              String(employee.role || "")
+              String(
+                employee.role || "",
+              )
                 .toLowerCase()
                 .includes(normalized)
             );
@@ -270,7 +351,9 @@ function App() {
       nextDevices =
         nextDevices.filter(
           (device) =>
-            String(device.owner_id || "") ===
+            String(
+              device.owner_id || "",
+            ) ===
             String(deviceOwnerFilter),
         );
     }
@@ -280,16 +363,22 @@ function App() {
         deviceSearch.toLowerCase();
 
       nextDevices =
-        nextDevices.filter((device) => {
-          return (
-            String(device.name || "")
-              .toLowerCase()
-              .includes(normalized) ||
-            String(device.type || "")
-              .toLowerCase()
-              .includes(normalized)
-          );
-        });
+        nextDevices.filter(
+          (device) => {
+            return (
+              String(
+                device.name || "",
+              )
+                .toLowerCase()
+                .includes(normalized) ||
+              String(
+                device.type || "",
+              )
+                .toLowerCase()
+                .includes(normalized)
+            );
+          },
+        );
     }
 
     setFilteredDevices(nextDevices);
@@ -301,10 +390,9 @@ function App() {
   ]);
 
   useEffect(() => {
-    const assigned =
-      devices.filter(
-        (device) => device.owner_id,
-      ).length;
+    const assigned = devices.filter(
+      (device) => device.owner_id,
+    ).length;
 
     setDashboardState({
       totalEmployees: employees.length,
@@ -318,29 +406,23 @@ function App() {
       return undefined;
     }
 
-    const timer =
-      window.setTimeout(
-        () => setStatusMessage(""),
-        2500,
-      );
+    const timer = window.setTimeout(
+      () => setStatusMessage(""),
+      2500,
+    );
 
     return () =>
       window.clearTimeout(timer);
   }, [statusMessage]);
-
-  useEffect(() => {
-    if (activeTab === "orders") {
-      fetchOrders();
-    }
-  }, [activeTab]);
 
   async function fetchEmployees() {
     setLoadingEmployees(true);
     setErrors([]);
 
     try {
-      const response =
-        await fetch("/api/employees");
+      const response = await fetch(
+        "/api/employees",
+      );
 
       const json =
         await response.json();
@@ -375,8 +457,9 @@ function App() {
     setLoadingDevices(true);
 
     try {
-      const response =
-        await fetch("/api/devices");
+      const response = await fetch(
+        "/api/devices",
+      );
 
       const json =
         await response.json();
@@ -411,8 +494,9 @@ function App() {
     setLoadingProducts(true);
 
     try {
-      const response =
-        await fetch("/api/products");
+      const response = await fetch(
+        "/api/products",
+      );
 
       const json =
         await response.json();
@@ -471,24 +555,55 @@ function App() {
     }
   }
 
+  async function fetchOrders() {
+    setLoadingOrders(true);
+
+    try {
+      const response =
+        await fetch("/api/orders");
+
+      const json =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          json.message ||
+            "Could not load orders",
+        );
+      }
+
+      setOrders(
+        Array.isArray(json)
+          ? json
+          : [],
+      );
+    } catch (error) {
+      setErrors((prev) => [
+        ...prev,
+        `Orders fetch failed: ${error.message}`,
+      ]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }
+
   async function handleAddToCart(
     variantId,
   ) {
     try {
-      const response =
-        await fetch(
-          "/api/cart/items",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              variantId,
-            }),
+      const response = await fetch(
+        "/api/cart/items",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
           },
-        );
+          body: JSON.stringify({
+            variantId,
+          }),
+        },
+      );
 
       const json =
         await response.json();
@@ -522,20 +637,19 @@ function App() {
     }
 
     try {
-      const response =
-        await fetch(
-          `/api/cart/items/${variantId}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              quantity,
-            }),
+      const response = await fetch(
+        `/api/cart/items/${variantId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type":
+              "application/json",
           },
-        );
+          body: JSON.stringify({
+            quantity,
+          }),
+        },
+      );
 
       const json =
         await response.json();
@@ -560,13 +674,12 @@ function App() {
     variantId,
   ) {
     try {
-      const response =
-        await fetch(
-          `/api/cart/items/${variantId}`,
-          {
-            method: "DELETE",
-          },
-        );
+      const response = await fetch(
+        `/api/cart/items/${variantId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       const json =
         await response.json();
@@ -633,38 +746,6 @@ function App() {
     }
   }
 
-  async function fetchOrders() {
-    setLoadingOrders(true);
-
-    try {
-      const response =
-        await fetch("/api/orders");
-
-      const json =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          json.message ||
-            "Could not load orders",
-        );
-      }
-
-      setOrders(
-        Array.isArray(json)
-          ? json
-          : [],
-      );
-    } catch (error) {
-      setErrors((prev) => [
-        ...prev,
-        `Orders fetch failed: ${error.message}`,
-      ]);
-    } finally {
-      setLoadingOrders(false);
-    }
-  }
-
   async function submitEmployee(event) {
     event.preventDefault();
 
@@ -680,10 +761,9 @@ function App() {
       ? `/api/employees/${editingEmployeeId}`
       : "/api/employees";
 
-    const method =
-      isEditing
-        ? "PUT"
-        : "POST";
+    const method = isEditing
+      ? "PUT"
+      : "POST";
 
     try {
       const response =
@@ -747,10 +827,9 @@ function App() {
       ? `/api/devices/${editingDeviceId}`
       : "/api/devices";
 
-    const method =
-      isEditing
-        ? "PUT"
-        : "POST";
+    const method = isEditing
+      ? "PUT"
+      : "POST";
 
     try {
       const response =
@@ -810,13 +889,12 @@ function App() {
     }
 
     try {
-      const response =
-        await fetch(
-          `/api/employees/${employeeId}`,
-          {
-            method: "DELETE",
-          },
-        );
+      const response = await fetch(
+        `/api/employees/${employeeId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         const json =
@@ -833,6 +911,10 @@ function App() {
       );
 
       await fetchEmployees();
+
+      // Exercise B fix:
+      // refresh device state immediately
+      // after backend unassigns devices.
       await fetchDevices();
     } catch (error) {
       setErrors((prev) => [
@@ -855,13 +937,12 @@ function App() {
     }
 
     try {
-      const response =
-        await fetch(
-          `/api/devices/${deviceId}`,
-          {
-            method: "DELETE",
-          },
-        );
+      const response = await fetch(
+        `/api/devices/${deviceId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         const json =
@@ -901,8 +982,10 @@ function App() {
     );
 
     setEmployeeForm({
-      name: employee.name || "",
-      role: employee.role || "",
+      name:
+        employee.name || "",
+      role:
+        employee.role || "",
     });
   }
 
@@ -914,7 +997,8 @@ function App() {
     );
 
     setDeviceForm({
-      name: device.name || "",
+      name:
+        device.name || "",
       type:
         device.type ||
         "Laptop",
@@ -941,13 +1025,17 @@ function App() {
     setEditingDeviceId(null);
   }
 
-  const cartTotal =
-    cart.reduce(
-      (total, item) =>
-        total +
-        item.line_total,
-      0,
-    );
+  const cartTotal = cart.reduce(
+    (total, item) =>
+      total + item.line_total,
+    0,
+  );
+
+  const cartItemCount = cart.reduce(
+    (total, item) =>
+      total + item.quantity,
+    0,
+  );
 
   return (
     <div className="app-page">
@@ -964,9 +1052,7 @@ function App() {
 
       <section className="app-kpis">
         <article>
-          <h3>
-            Total employees
-          </h3>
+          <h3>Total employees</h3>
 
           <strong>
             {
@@ -976,9 +1062,7 @@ function App() {
         </article>
 
         <article>
-          <h3>
-            Total devices
-          </h3>
+          <h3>Total devices</h3>
 
           <strong>
             {
@@ -1008,7 +1092,9 @@ function App() {
               : "tab-button"
           }
           onClick={() =>
-            setActiveTab("employees")
+            setActiveTab(
+              "employees",
+            )
           }
           type="button"
         >
@@ -1022,7 +1108,9 @@ function App() {
               : "tab-button"
           }
           onClick={() =>
-            setActiveTab("devices")
+            setActiveTab(
+              "devices",
+            )
           }
           type="button"
         >
@@ -1036,7 +1124,9 @@ function App() {
               : "tab-button"
           }
           onClick={() =>
-            setActiveTab("catalog")
+            setActiveTab(
+              "catalog",
+            )
           }
           type="button"
         >
@@ -1050,7 +1140,9 @@ function App() {
               : "tab-button"
           }
           onClick={() =>
-            setActiveTab("orders")
+            setActiveTab(
+              "orders",
+            )
           }
           type="button"
         >
@@ -1085,12 +1177,15 @@ function App() {
         <div className="status error">
           <div className="error-header">
             <strong>
-              Errors ({errors.length})
+              Errors (
+              {errors.length})
             </strong>
 
             <button
               type="button"
-              onClick={clearErrorStack}
+              onClick={
+                clearErrorStack
+              }
             >
               Clear
             </button>
@@ -1111,7 +1206,8 @@ function App() {
       ) : null}
 
       <main className="app-main">
-        {activeTab === "employees" ? (
+        {activeTab ===
+        "employees" ? (
           <section className="panel">
             <h2>
               {editingEmployeeId
@@ -1121,7 +1217,9 @@ function App() {
 
             <form
               className="app-form"
-              onSubmit={submitEmployee}
+              onSubmit={
+                submitEmployee
+              }
             >
               <label>
                 Name
@@ -1130,12 +1228,15 @@ function App() {
                   value={
                     employeeForm.name
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setEmployeeForm(
                       (prev) => ({
                         ...prev,
                         name:
-                          event.target
+                          event
+                            .target
                             .value,
                       }),
                     )
@@ -1152,12 +1253,15 @@ function App() {
                   value={
                     employeeForm.role
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setEmployeeForm(
                       (prev) => ({
                         ...prev,
                         role:
-                          event.target
+                          event
+                            .target
                             .value,
                       }),
                     )
@@ -1194,10 +1298,16 @@ function App() {
                 Role filter
 
                 <select
-                  value={roleFilter}
-                  onChange={(event) =>
+                  value={
+                    roleFilter
+                  }
+                  onChange={(
+                    event,
+                  ) =>
                     setRoleFilter(
-                      event.target.value,
+                      event
+                        .target
+                        .value,
                     )
                   }
                 >
@@ -1225,9 +1335,13 @@ function App() {
                   value={
                     employeeSearch
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setEmployeeSearch(
-                      event.target.value,
+                      event
+                        .target
+                        .value,
                     )
                   }
                   placeholder="Search name / role"
@@ -1247,8 +1361,12 @@ function App() {
                 <tr>
                   <th>Name</th>
                   <th>Role</th>
-                  <th>Devices</th>
-                  <th>Actions</th>
+                  <th>
+                    Devices
+                  </th>
+                  <th>
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
@@ -1308,7 +1426,8 @@ function App() {
                 0 ? (
                   <tr>
                     <td colSpan="4">
-                      No employees found
+                      No employees
+                      found
                     </td>
                   </tr>
                 ) : null}
@@ -1317,7 +1436,8 @@ function App() {
           </section>
         ) : null}
 
-        {activeTab === "devices" ? (
+        {activeTab ===
+        "devices" ? (
           <section className="panel">
             <h2>
               {editingDeviceId
@@ -1327,7 +1447,9 @@ function App() {
 
             <form
               className="app-form"
-              onSubmit={submitDevice}
+              onSubmit={
+                submitDevice
+              }
             >
               <label>
                 Device name
@@ -1336,12 +1458,15 @@ function App() {
                   value={
                     deviceForm.name
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setDeviceForm(
                       (prev) => ({
                         ...prev,
                         name:
-                          event.target
+                          event
+                            .target
                             .value,
                       }),
                     )
@@ -1358,12 +1483,15 @@ function App() {
                   value={
                     deviceForm.type
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setDeviceForm(
                       (prev) => ({
                         ...prev,
                         type:
-                          event.target
+                          event
+                            .target
                             .value,
                       }),
                     )
@@ -1394,12 +1522,15 @@ function App() {
                   value={
                     deviceForm.ownerId
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setDeviceForm(
                       (prev) => ({
                         ...prev,
                         ownerId:
-                          event.target
+                          event
+                            .target
                             .value,
                       }),
                     )
@@ -1458,9 +1589,13 @@ function App() {
                   value={
                     deviceTypeFilter
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setDeviceTypeFilter(
-                      event.target.value,
+                      event
+                        .target
+                        .value,
                     )
                   }
                 >
@@ -1488,9 +1623,13 @@ function App() {
                   value={
                     deviceOwnerFilter
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setDeviceOwnerFilter(
-                      event.target.value,
+                      event
+                        .target
+                        .value,
                     )
                   }
                 >
@@ -1524,9 +1663,13 @@ function App() {
                   value={
                     deviceSearch
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setDeviceSearch(
-                      event.target.value,
+                      event
+                        .target
+                        .value,
                     )
                   }
                   placeholder="Search name / type"
@@ -1550,7 +1693,9 @@ function App() {
                   <th>Name</th>
                   <th>Type</th>
                   <th>Owner</th>
-                  <th>Actions</th>
+                  <th>
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
@@ -1558,14 +1703,20 @@ function App() {
                 {filteredDevices.map(
                   (device) => (
                     <tr
-                      key={device.id}
+                      key={
+                        device.id
+                      }
                     >
                       <td>
-                        {device.name}
+                        {
+                          device.name
+                        }
                       </td>
 
                       <td>
-                        {device.type}
+                        {
+                          device.type
+                        }
                       </td>
 
                       <td>
@@ -1608,7 +1759,8 @@ function App() {
                 0 ? (
                   <tr>
                     <td colSpan="4">
-                      No devices found
+                      No devices
+                      found
                     </td>
                   </tr>
                 ) : null}
@@ -1617,18 +1769,14 @@ function App() {
           </section>
         ) : null}
 
-        {activeTab === "catalog" ? (
+        {activeTab ===
+        "catalog" ? (
           <section className="panel">
             <h2>Catalog</h2>
 
             <p>
               Cart items:{" "}
-              {cart.reduce(
-                (total, item) =>
-                  total +
-                  item.quantity,
-                0,
-              )}
+              {cartItemCount}
             </p>
 
             {loadingProducts ? (
@@ -1640,7 +1788,8 @@ function App() {
             <div className="catalog-layout">
               <div>
                 {!loadingProducts &&
-                products.length === 0 ? (
+                products.length ===
+                  0 ? (
                   <p>
                     No products
                     available.
@@ -1648,7 +1797,8 @@ function App() {
                 ) : null}
 
                 {!loadingProducts &&
-                products.length > 0 ? (
+                products.length >
+                  0 ? (
                   <table>
                     <thead>
                       <tr>
@@ -1680,7 +1830,9 @@ function App() {
 
                     <tbody>
                       {products.map(
-                        (product) => {
+                        (
+                          product,
+                        ) => {
                           const price =
                             product.base_price +
                             product.price_delta;
@@ -1736,7 +1888,8 @@ function App() {
                                     0
                                   }
                                 >
-                                  Add to cart
+                                  Add to
+                                  cart
                                 </button>
                               </td>
                             </tr>
@@ -1760,7 +1913,8 @@ function App() {
                 {!loadingCart &&
                 cart.length === 0 ? (
                   <p>
-                    Your cart is empty.
+                    Your cart is
+                    empty.
                   </p>
                 ) : null}
 
@@ -1893,7 +2047,8 @@ function App() {
           </section>
         ) : null}
 
-        {activeTab === "orders" ? (
+        {activeTab ===
+        "orders" ? (
           <section className="panel">
             <h2>Orders</h2>
 
@@ -1916,7 +2071,9 @@ function App() {
                 {orders.map(
                   (order) => (
                     <article
-                      key={order.id}
+                      key={
+                        order.id
+                      }
                       className="order-card"
                     >
                       <div className="order-header">
@@ -1967,7 +2124,8 @@ function App() {
                             </th>
 
                             <th>
-                              Unit price
+                              Unit
+                              price
                             </th>
 
                             <th>
@@ -1982,7 +2140,9 @@ function App() {
 
                         <tbody>
                           {order.items.map(
-                            (item) => (
+                            (
+                              item,
+                            ) => (
                               <tr
                                 key={
                                   item.id
