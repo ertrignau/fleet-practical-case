@@ -21,6 +21,8 @@ function App() {
   });
   const [employees, setEmployees] = useState([]);
   const [devices, setDevices] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [filteredDevices, setFilteredDevices] = useState([]);
   const [roleFilter, setRoleFilter] = useState("");
@@ -106,6 +108,12 @@ function App() {
     fetchEmployees();
     fetchDevices();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "catalog") {
+      fetchProducts();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab !== "devices") {
@@ -274,6 +282,30 @@ function App() {
       setErrors((prev) => [...prev, `Devices fetch failed: ${error.message}`]);
     } finally {
       setLoadingDevices(false);
+    }
+  }
+
+  async function fetchProducts() {
+    setLoadingProducts(true);
+
+    try {
+      const response = await fetch("/api/products");
+      const json = await response.json();
+
+      // console.log("Products:", json);
+
+      if (!response.ok) {
+        throw new Error(json.message || "Could not load product");
+      }
+
+      setProducts(Array.isArray(json) ? json : []);
+    } catch (error) {
+      setErrors((prev) => [
+        ...prev,
+        `Products fetch failed: ${error.message}`,
+      ]);
+    } finally {
+      setLoadingProducts(false);
     }
   }
 
@@ -787,7 +819,46 @@ function App() {
         {activeTab === "catalog" ? (
           <section className="panel">
             <h2>Catalog</h2>
-            <p>Catalog coming soon.</p>
+            
+            {loadingProducts ? <p>Loading catalog...</p> : null}
+
+            {!loadingProducts && products.length === 0 ? (
+              <p>No products available.</p>
+            ) : null}
+
+            {!loadingProducts && products.length > 0 ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Configuration</th>
+                    <th>SKU</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {products.map((product) => {
+                    const price = product.base_price + product.price_delta;
+
+                    return (
+                      <tr key={product.variant_id}>
+                        <td>{product.name}</td>
+                        <td>{product.configuration}</td>
+                        <td>{product.sku}</td>
+                        <td>{price.toFixed(2)} €</td>
+                        <td>
+                          {product.stock > 0
+                            ? product.stock
+                            : "Out of stock"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : null}
           </section>
         ): null}
         {activeTab === "orders" ? (
