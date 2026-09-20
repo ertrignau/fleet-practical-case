@@ -23,6 +23,8 @@ function App() {
   const [devices, setDevices] = useState([]);
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [cart, setCart] = useState([]);
+  const [loadingCart, setLoadingCart] = useState(false);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [filteredDevices, setFilteredDevices] = useState([]);
   const [roleFilter, setRoleFilter] = useState("");
@@ -112,6 +114,7 @@ function App() {
   useEffect(() => {
     if (activeTab === "catalog") {
       fetchProducts();
+      fetchCart();
     }
   }, [activeTab]);
 
@@ -309,6 +312,28 @@ function App() {
     }
   }
 
+  async function fetchCart() {
+    setLoadingCart(true);
+
+    try {
+      const response = await fetch("/api/cart");
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.message || "Could not load cart");
+      }
+
+      setCart(Array.isArray(json) ? json: []);
+    } catch (error) {
+      setErrors((prev) => [
+        ...prev,
+        `Cart fetch failed: ${error.message}`,
+      ]);
+    } finally {
+      setLoadingCart(false);
+    }
+  }
+
   async function handleAddToCart(variantId) {
     try {
       const response = await fetch("/api/cart/items", {
@@ -328,6 +353,7 @@ function App() {
       }
 
       setStatusMessage("Item added to cart");
+      await fetchCart();
     } catch (error) {
       setErrors((prev) => [
         ...prev,
@@ -847,6 +873,7 @@ function App() {
           <section className="panel">
             <h2>Catalog</h2>
             
+            <p>Cart items: {cart.length}</p>
             {loadingProducts ? <p>Loading catalog...</p> : null}
 
             {!loadingProducts && products.length === 0 ? (
