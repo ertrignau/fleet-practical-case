@@ -362,6 +362,59 @@ function App() {
     }
   }
 
+  async function handleUpdateCartQuantity(variantId, quantity) {
+  if (quantity < 1) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/cart/items/${variantId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        quantity,
+      }),
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+      throw new Error(json.message || "Could not update cart item");
+    }
+
+    await fetchCart();
+  } catch (error) {
+    setErrors((prev) => [
+      ...prev,
+      `Cart update failed: ${error.message}`,
+    ]);
+  }
+}
+
+async function handleRemoveCartItem(variantId) {
+  try {
+    const response = await fetch(`/api/cart/items/${variantId}`, {
+      method: "DELETE",
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+      throw new Error(json.message || "Could not remove cart item");
+    }
+
+    setStatusMessage("Item removed from cart");
+    await fetchCart();
+  } catch (error) {
+    setErrors((prev) => [
+      ...prev,
+      `Cart remove failed: ${error.message}`,
+    ]);
+  }
+}
+
   async function submitEmployee(event) {
     event.preventDefault();
 
@@ -510,6 +563,11 @@ function App() {
     setDeviceForm(DEFAULT_DEVICE_FORM);
     setEditingDeviceId(null);
   }
+
+  const cartTotal = cart.reduce(
+    (total, item) => total + item.line_total,
+    0,
+  );
 
   return (
     <div className="app-page">
@@ -873,7 +931,7 @@ function App() {
           <section className="panel">
             <h2>Catalog</h2>
             
-            <p>Cart items: {cart.length}</p>
+            Cart items: {cart.reduce((total, item) => total + item.quantity, 0)}
             {loadingProducts ? <p>Loading catalog...</p> : null}
 
             {!loadingProducts && products.length === 0 ? (
@@ -923,6 +981,75 @@ function App() {
                 </tbody>
               </table>
             ) : null}
+
+            <aside className="cart-sidebar">
+              <h3>Cart</h3>
+
+              {loadingCart ? <p>Loading cart ...</p> : null}
+
+              {!loadingCart && cart.length === 0 ? (
+                <p>Your cart is empty</p>
+              ) : null}
+
+              {!loadingCart && cart.length > 0 ? (
+                <>
+                {cart.map((item) => (
+                  <div
+                    key={item.product_variant_id}
+                    className="cart-item"
+                  >
+                  <strong>{item.name}</strong>
+                  <p>{item.configuration}</p>
+                  <p>
+                    {item.unit_price.toFixed(2)} € each
+                  </p>
+                  <div className="cart-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleUpdateCartQuantity(
+                        item.product_variant_id,
+                        item.quantity -1,
+                      )
+                    }
+                    disabled={item.quantity <= 1}
+                  >
+                    -
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleUpdateCartQuantity(
+                        item.product_variant_id,
+                        item.quantity + 1,
+                      )
+                    }
+                    disabled={item.quantity >= item.stock}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRemoveCartItem(item.product_variant_id)
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+                <p>
+                  <strong>{item.line_total.toFixed(2)} €</strong>
+                </p>
+                </div>
+                ))}
+                <hr />
+                <p>
+                  <strong>Total: {cartTotal.toFixed(2)} €</strong>
+                </p>
+                </>
+              ) :null}
+            </aside>
           </section>
         ): null}
         {activeTab === "orders" ? (
