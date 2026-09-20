@@ -3,9 +3,22 @@ import "./App.css";
 
 const DEFAULT_EMPLOYEE_FORM = { name: "", role: "" };
 const DEFAULT_DEVICE_FORM = { name: "", type: "Laptop", ownerId: "" };
+const ALLOWED_TABS = ["employees", "devices", "catalog", "orders"];
 
 function App() {
-  const [activeTab, setActiveTab] = useState("employees");
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash.replace("#", "");
+    const savedTab = window.localStorage.getItem("fleet_active_tab");
+
+    if (ALLOWED_TABS.includes(hash)) {
+      return hash;
+    }
+
+    if (ALLOWED_TABS.includes(savedTab)) {
+      return savedTab;
+    }
+    return "employees";
+  });
   const [employees, setEmployees] = useState([]);
   const [devices, setDevices] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -53,7 +66,6 @@ function App() {
   }, [devices]);
 
   useEffect(() => {
-    const savedTab = window.localStorage.getItem("fleet_active_tab");
     const savedRoleFilter = window.localStorage.getItem("fleet_role_filter");
     const savedTypeFilter = window.localStorage.getItem(
       "fleet_device_type_filter",
@@ -61,7 +73,6 @@ function App() {
     const savedOwnerFilter = window.localStorage.getItem(
       "fleet_device_owner_filter",
     );
-    const hash = window.location.hash.replace("#", "");
 
     if (savedRoleFilter !== null) {
       setRoleFilter(savedRoleFilter);
@@ -71,12 +82,6 @@ function App() {
     }
     if (savedOwnerFilter !== null) {
       setDeviceOwnerFilter(savedOwnerFilter);
-    }
-
-    if (hash === "employees" || hash === "devices") {
-      setActiveTab(hash);
-    } else if (savedTab === "employees" || savedTab === "devices") {
-      setActiveTab(savedTab);
     }
   }, []);
 
@@ -462,6 +467,26 @@ function App() {
         >
           Devices
         </button>
+
+        <button
+          className={
+            activeTab === "catalog" ? "tab-button active" : "tab-button"
+          }
+          onClick={() => setActiveTab("catalog")}
+          type="button"
+        >
+          Catalog
+        </button>
+
+        <button
+          className={
+            activeTab === "orders" ? "tab-button active" : "tab-button"
+          }
+          onClick={() => setActiveTab("orders")}
+          type="button"
+          >
+            Orders
+          </button>
         <button
           type="button"
           onClick={() => {
@@ -757,6 +782,18 @@ function App() {
                 ) : null}
               </tbody>
             </table>
+          </section>
+        ) : null}
+        {activeTab === "catalog" ? (
+          <section className="panel">
+            <h2>Catalog</h2>
+            <p>Catalog coming soon.</p>
+          </section>
+        ): null}
+        {activeTab === "orders" ? (
+          <section className="panel">
+            <h2>Orders</h2>
+            <p>Order history coming soon.</p>
           </section>
         ) : null}
       </main>
